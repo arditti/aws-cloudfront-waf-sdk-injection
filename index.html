@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>TAG DROP — agents in disguise</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
@@ -48,18 +48,39 @@
   .pad{display:none;gap:8px;justify-content:center}
   .pad button{font-family:inherit;font-size:14px;width:52px;height:52px;background:var(--panel);color:var(--ink);border:3px solid #000;box-shadow:3px 3px 0 #000}
   footer{font-size:7px;color:var(--dim);text-align:center;line-height:2}
-  @media (max-width:760px){
-    .wrap{flex-direction:column;align-items:center}
-    .side{width:min(92vw,420px);flex-direction:row;flex-wrap:wrap}
-    .side .card{flex:1 1 45%}
-    .side .keys-card{display:none}
-    canvas#board{height:58vh}
-    .pad{display:flex}
+  .keys.touch{display:none}
+  canvas#board,.pad{touch-action:none;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
+  @media (max-width:760px), (pointer:coarse) and (max-height:900px){
+    html,body{height:100%;overflow:hidden;overscroll-behavior:none}
+    body{justify-content:flex-start;gap:6px;padding:max(6px,env(safe-area-inset-top)) 6px max(6px,env(safe-area-inset-bottom));height:100dvh}
+    .titleblock,footer,.chrome,.side .keys-card,.side .card h3{display:none!important}
+    .wrap,.side,.side .card,.pad{min-width:0}
+    .keys.kb{display:none}.keys.touch{display:block}
+    .wrap{flex-direction:column;align-items:center;gap:6px;width:100%;flex:1;min-height:0}
+    .side{order:-1;width:100%;max-width:420px;flex-direction:row;gap:6px}
+    .side .card{padding:6px;border-width:3px;box-shadow:none;font-size:8px;line-height:1.5;display:flex;align-items:center}
+    .side .card:first-child{flex:none}
+    canvas#next{width:60px;height:36px}
+    .stats{flex:1;display:grid!important;grid-template-columns:1fr 1fr;gap:2px 10px}
+    .stat{font-size:7px}.stat b{font-size:8px}
+    .sdk-card{flex:1}
+    label.box{font-size:7px;line-height:1.6;gap:6px;align-items:center}
+    label.box input{width:22px;height:22px}
+    .browser{border-width:3px;box-shadow:none}
+    .headbar{font-size:9px;padding:5px 8px;border-bottom-width:3px}
+    .slot{height:18px;min-width:64px;font-size:7px}
+    canvas#board{height:calc(100dvh - 228px);height:calc(100dvh - 228px - env(safe-area-inset-bottom))}
+    .overlay{padding:12px;gap:10px;font-size:8px;line-height:1.8}
+    .overlay h2{font-size:13px}
+    #toast{font-size:7px}
+    .pad{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;width:100%;max-width:420px}
+    .pad button{width:auto;height:58px;font-size:18px;box-shadow:none;border-width:3px}
+    .pad button:active{background:#ff9900;color:#111}
   }
 </style>
 </head>
 <body>
-<div style="text-align:center">
+<div class="titleblock" style="text-align:center">
   <h1>TAG <span>DROP</span></h1>
   <div class="sub">stack the page. some tags are agents in disguise.</div>
 </div>
@@ -78,8 +99,10 @@
       <p>Every block is a tag on your page.</p>
       <p>Some are <span class="hi">AI agents</span> wearing a tag costume. Without browser signals they look exactly like the real thing.</p>
       <p>Rows with a hidden agent <span class="hi">won't clear</span>.</p>
+      <p>Look closely: fakes glitch and misspell their tags (<span class="hi">&lt;d1v&gt;</span>).</p>
       <button class="go" id="startBtn">PRESS START ▶</button>
-      <p class="keys">← → move · ↑ rotate · ↓ soft · SPACE drop · P pause</p>
+      <p class="keys kb">← → move · ↑ rotate · ↓ soft · SPACE drop · P pause</p>
+      <p class="keys touch">tap = rotate · swipe ← → = move<br>swipe ↓ = drop · or use the buttons</p>
     </div>
 
     <div id="sdkModal" class="overlay hidden">
@@ -105,13 +128,13 @@
       <h3>NEXT</h3>
       <canvas id="next" width="120" height="72"></canvas>
     </div>
-    <div class="card">
+    <div class="card stats">
       <div class="stat">SCORE <b id="score">0</b></div>
       <div class="stat">LINES <b id="lines">0</b></div>
       <div class="stat">LEVEL <b id="level">1</b></div>
       <div class="stat">BLOCKED <b id="bots">0</b></div>
     </div>
-    <div class="card">
+    <div class="card sdk-card">
       <h3>CLOUDFRONT</h3>
       <label class="box"><input type="checkbox" id="sdkBox"><span>Inject AWS WAF Bot Control SDK</span></label>
     </div>
@@ -148,11 +171,13 @@ const DEFS = [
   {k:'S', tag:'<ul>',  c:'#22c55e'}, {k:'Z', tag:'<h1>',  c:'#ec4899'}, {k:'J', tag:'<p>',   c:'#06b6d4'},
   {k:'L', tag:'<a>',   c:'#fb923c'}
 ];
+// lookalike tags agents wear: close enough to pass a glance
+const FAKE = {'<div>': '<d1v>', '<img>': '<1mg>', '<nav>': '<n4v>', '<ul>': '<u1>', '<h1>': '<hl>', '<p>': '<p?>', '<a>': '<4>'};
 const BOT_NAMES = ['GPT-ish agent', 'headless chrome', 'scraper.py', 'personal agent', 'curl/8.4', 'puppeteer', 'crawler-9000'];
 
 let grid, cur, nextP, bag, score, lines, level, botsBlocked, sdk = false, state = 'title';
 let acc = 0, particles = [], floats = [], pendingClear = null, stuckWarned = false, paused = false, muted = false;
-let rescue = null;
+let rescue = null, botHinted = false;
 
 // ---------- audio ----------
 let ac = null;
@@ -181,7 +206,7 @@ function newPiece() {
   const def = DEFS[bag.pop()];
   const bot = Math.random() < botRate();
   const m = SHAPES[def.k].map(r => [...r]);
-  return { def, m, bot, name: bot ? rnd(BOT_NAMES) : null, x: Math.floor((COLS - m[0].length) / 2), y: 0, phase: Math.random() * 3000 };
+  return { def, m, bot, tag: bot ? FAKE[def.tag] : def.tag, name: bot ? rnd(BOT_NAMES) : null, x: Math.floor((COLS - m[0].length) / 2), y: 0, phase: Math.random() * 3000 };
 }
 function collide(m, x, y) {
   for (let r = 0; r < m.length; r++) for (let c = 0; c < m[r].length; c++) {
@@ -192,16 +217,25 @@ function collide(m, x, y) {
   }
   return false;
 }
+// longest straight run of cells in a piece: where its tag label goes
+function labelRun(m) {
+  let best = {r: 0, c: 0, dir: 'h', len: 0};
+  m.forEach((row, r) => { let n = 0; row.forEach((v, c) => { n = v ? n + 1 : 0; if (n > best.len || (n === best.len && best.dir === 'v')) best = {r, c: c - n + 1, dir: 'h', len: n}; }); });
+  for (let c = 0; c < m[0].length; c++) { let n = 0; for (let r = 0; r < m.length; r++) { n = m[r][c] ? n + 1 : 0; if (n > best.len) best = {r: r - n + 1, c, dir: 'v', len: n}; } }
+  return best;
+}
+let pidSeq = 0;
 function leadOf(m) { for (let r = 0; r < m.length; r++) for (let c = 0; c < m[r].length; c++) if (m[r][c]) return [r, c]; }
 
 function reset() {
   grid = Array.from({length: ROWS}, () => Array(COLS).fill(null));
   bag = []; score = 0; lines = 0; level = 1; botsBlocked = 0; acc = 0;
-  particles = []; floats = []; pendingClear = null; stuckWarned = false; rescue = null;
+  particles = []; floats = []; pendingClear = null; stuckWarned = false; rescue = null; botHinted = false;
   nextP = newPiece(); spawn(); hud();
 }
 function spawn() {
   cur = nextP; nextP = newPiece(); acc = 0;
+  if (cur.bot && !sdk && !botHinted) { botHinted = true; toast('🤖 One of these tags is not real...'); }
   if (collide(cur.m, cur.x, cur.y)) { cur = null; fail(); }
   drawNext();
 }
@@ -233,7 +267,9 @@ function lock() {
     botsBlocked++; score += 50 * level;
     beep(880, 0.06); setTimeout(() => beep(220, 0.15, 'sawtooth', 0.05, -150), 60);
   } else {
-    cells.forEach(([r, c, lead]) => { grid[r][c] = {c: p.def.c, tag: p.def.tag, bot: p.bot, name: p.name, lead, rev: false, phase: p.phase}; });
+    const pid = ++pidSeq, run = labelRun(p.m);
+    cells.forEach(([r, c, lead]) => { grid[r][c] = {c: p.def.c, tag: p.tag, bot: p.bot, name: p.name, lead, rev: false, phase: p.phase, pid}; });
+    grid[p.y + run.r][p.x + run.c].lab = {dir: run.dir, len: run.len};
     beep(140, 0.05, 'triangle', 0.08);
   }
   hud();
@@ -352,14 +388,24 @@ function cell(ctx, x, y, s, cl, revealed, time) {
     ctx.strokeStyle = '#ff4d4d'; ctx.lineWidth = 2; ctx.strokeRect(x + 1, y + 1, s - 2, s - 2);
     return;
   }
-  const glitch = cl.bot && ((time * 1000 + cl.phase) % 3400) < 110;
+  const glitch = glitching(cl, time);
   block(ctx, glitch ? x + 3 : x, y, s, cl.c);
   if (glitch) { botFace(ctx, x + 3, y, s, '#2dd4bf'); return; }
-  if (cl.lead && s >= 30) {
-    ctx.fillStyle = 'rgba(0,0,0,.6)'; ctx.font = `7px ${FONT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText(cl.tag, x + s / 2, y + s / 2 + 1);
-  }
 }
+// tag label spanning `len` cells from (x,y); bracket-less on a single cell so it stays big
+function tagLabel(ctx, x, y, s, dir, len, tag) {
+  const text = len >= 2 ? tag : tag.replace(/[<>]/g, '');
+  const size = len >= 2 ? 14 : (text.length > 2 ? 11 : 14);
+  const w = (dir === 'h' ? len : 1) * s, h = (dir === 'v' ? len : 1) * s;
+  ctx.save(); ctx.translate(x + w / 2, y + h / 2); if (dir === 'v' && len >= 2) ctx.rotate(-Math.PI / 2);
+  ctx.font = `${size}px ${FONT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  const tw = ctx.measureText(text).width;
+  ctx.fillStyle = 'rgba(11,18,32,.62)'; ctx.fillRect(-tw / 2 - 5, -size / 2 - 5, tw + 10, size + 10);
+  ctx.fillStyle = '#000'; ctx.fillText(text, 2, 3);
+  ctx.fillStyle = '#fff'; ctx.fillText(text, 0, 1);
+  ctx.restore();
+}
+const glitching = (cl, time) => cl.bot && ((time * 1000 + cl.phase) % 1900) < 230;
 function pieceCells(p) {
   const [lr, lc] = leadOf(p.m), out = [];
   p.m.forEach((row, r) => row.forEach((v, c) => { if (v) out.push([r, c, r === lr && c === lc]); }));
@@ -372,6 +418,13 @@ function drawGrid(time) {
   for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
     const g = grid[r][c]; if (g) cell(cx, c * S, r * S, S, g, g.rev, time);
   }
+  for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
+    const g = grid[r][c];
+    if (!g || !g.lab || g.rev || glitching(g, time)) continue;
+    let n = 1; // the run may have been cut by a line clear
+    while (n < g.lab.len) { const o = g.lab.dir === 'h' ? (grid[r] || [])[c + n] : (grid[r + n] || [])[c]; if (!o || o.pid !== g.pid) break; n++; }
+    tagLabel(cx, c * S, r * S, S, g.lab.dir, n, g.tag);
+  }
   if (pendingClear) {
     cx.fillStyle = `rgba(255,255,255,${0.4 + 0.5 * Math.sin(time * 40)})`;
     pendingClear.rows.forEach(r => cx.fillRect(0, r * S, W, S));
@@ -383,8 +436,9 @@ function drawPiece(time) {
   let gy = cur.y; while (!collide(cur.m, cur.x, gy + 1)) gy++;
   cx.strokeStyle = 'rgba(255,255,255,.25)'; cx.lineWidth = 2;
   pieceCells(cur).forEach(([r, c]) => cx.strokeRect((cur.x + c) * S + 3, (gy + r) * S + 3, S - 6, S - 6));
-  const cl = {c: cur.def.c, tag: cur.def.tag, bot: cur.bot, phase: cur.phase};
+  const cl = {c: cur.def.c, tag: cur.tag, bot: cur.bot, phase: cur.phase};
   pieceCells(cur).forEach(([r, c, lead]) => cell(cx, (cur.x + c) * S, (cur.y + r) * S, S, {...cl, lead}, sdk, time));
+  if (!(cur.bot && sdk) && !glitching(cl, time)) { const run = labelRun(cur.m); tagLabel(cx, (cur.x + run.c) * S, (cur.y + run.r) * S, S, run.dir, run.len, cur.tag); }
   if (cur.bot && sdk) {
     // signals: pulse ring + label
     const [r0, c0] = pieceCells(cur)[0];
@@ -557,7 +611,38 @@ addEventListener('keydown', e => {
   if (e.code === 'KeyP' && (state === 'play')) paused = !paused;
   if (e.code === 'KeyM') muted = !muted;
 });
-document.querySelectorAll('.pad button').forEach(b => b.addEventListener('pointerdown', e => { e.preventDefault(); act(b.dataset.k); }));
+document.querySelectorAll('.pad button').forEach(b => {
+  let hold, rep;
+  const stop = () => { clearTimeout(hold); clearInterval(rep); };
+  b.addEventListener('pointerdown', e => {
+    e.preventDefault(); stop(); act(b.dataset.k);
+    if (['left', 'right', 'down'].includes(b.dataset.k)) hold = setTimeout(() => rep = setInterval(() => act(b.dataset.k), 55), 170);
+  });
+  ['pointerup', 'pointercancel', 'pointerleave'].forEach(ev => b.addEventListener(ev, stop));
+  b.addEventListener('contextmenu', e => e.preventDefault());
+});
+// gestures on the board: tap rotates, drag moves a column per ~cell, flick down hard-drops
+let tch = null;
+cv.addEventListener('pointerdown', e => {
+  if (e.pointerType === 'mouse') return;
+  e.preventDefault(); const cell = cv.getBoundingClientRect().width / COLS;
+  tch = {x0: e.clientX, y0: e.clientY, x: e.clientX, y: e.clientY, t: performance.now(), cell, moved: false};
+});
+cv.addEventListener('pointermove', e => {
+  if (!tch) return; e.preventDefault();
+  const step = tch.cell * 0.9;
+  while (e.clientX - tch.x > step) { act('right'); tch.x += step; tch.moved = true; }
+  while (tch.x - e.clientX > step) { act('left'); tch.x -= step; tch.moved = true; }
+  while (e.clientY - tch.y > step * 1.2) { act('down'); tch.y += step * 1.2; tch.moved = true; }
+});
+cv.addEventListener('pointerup', e => {
+  if (!tch) return;
+  const dt = performance.now() - tch.t, dx = e.clientX - tch.x0, dy = e.clientY - tch.y0;
+  if (dy > 50 && dy / dt > 0.7 && Math.abs(dy) > Math.abs(dx) * 1.5) act('drop');
+  else if (!tch.moved && Math.hypot(dx, dy) < 12 && dt < 300) act('rot');
+  tch = null;
+});
+cv.addEventListener('pointercancel', () => tch = null);
 $('startBtn').onclick = start; $('againBtn').onclick = start; $('resumeBtn').onclick = resumeFromModal;
 $('sdkBox').addEventListener('change', e => {
   if (e.target.checked) {
