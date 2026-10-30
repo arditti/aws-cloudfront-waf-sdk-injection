@@ -577,7 +577,7 @@ function drawNext() {
   nx.fillStyle = '#0b1220'; nx.fillRect(0, 0, nv.width, nv.height);
   if (!nextP) return;
   const s = 24, m = nextP.m, ox = (nv.width - m[0].length * s) / 2, oy = (nv.height - m.length * s) / 2;
-  m.forEach((row, r) => row.forEach((v, c) => { if (v) cell(nx, ox + c * s, oy + r * s, s, {c: nextP.def.c, bot: nextP.bot, phase: 0}, sdk, 0); }));
+  m.forEach((row, r) => row.forEach((v, c) => { if (v) cell(nx, ox + c * s, oy + r * s, s, {c: nextP.def.c, bot: nextP.bot, phase: 1000}, sdk, 0); }));
 }
 function drawPause() {
   cx.fillStyle = 'rgba(11,18,32,.75)'; cx.fillRect(0, 0, W, H);
