@@ -1,5 +1,7 @@
 # TAG DROP
 
+![TAG DROP gameplay](demo.gif)
+
 An 8-bit falling-blocks game where some HTML tags are AI agents in disguise.
 Fail, and CloudFront injects the AWS WAF Bot Control SDK at the edge to reveal them, then AWS WAF blocks them.
 
