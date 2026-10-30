@@ -30,9 +30,18 @@
   .stat{display:flex;justify-content:space-between}
   .stat b{color:var(--teal)}
   canvas#next{display:block;margin:0 auto;background:#0b1220}
-  label.box{display:flex;gap:10px;align-items:flex-start;cursor:pointer;font-size:8px;line-height:1.8}
-  label.box input{appearance:none;flex:none;width:20px;height:20px;border:3px solid var(--ink);background:#0b1220;margin:0;cursor:pointer}
-  label.box input:checked{background:var(--orange);border-color:var(--orange);box-shadow:inset 0 0 0 3px #0b1220}
+  .sdkrow{display:flex;gap:10px;align-items:center;font-size:8px;line-height:1.7}
+  .toggle{flex:none;position:relative;width:76px;height:30px;padding:0;border:3px solid #000;background:#38465a;cursor:pointer;
+          font-family:inherit;font-size:9px;color:#cbd5e1;box-shadow:3px 3px 0 #000;-webkit-tap-highlight-color:transparent}
+  .toggle .knob{position:absolute;top:3px;left:3px;width:28px;height:18px;background:#e6edf7;box-shadow:inset -3px -3px 0 #94a3b8;transition:left .15s steps(3)}
+  .toggle .txt{position:absolute;top:50%;right:8px;transform:translateY(-45%)}
+  .toggle[aria-pressed="true"]{background:var(--orange);color:#111}
+  .toggle[aria-pressed="true"] .knob{left:39px}
+  .toggle[aria-pressed="true"] .txt{right:auto;left:8px}
+  .toggle.busy{background:var(--teal);color:#111}
+  .toggle.busy .knob{left:21px}
+  .toggle.busy .txt{display:none}
+  .toggle:disabled{cursor:wait}
   .keys{font-size:7px;color:var(--dim);line-height:2}
   .keys b{color:var(--ink)}
   .overlay{position:absolute;inset:0;background:#0b1220ee;display:flex;flex-direction:column;align-items:center;justify-content:center;
@@ -64,8 +73,11 @@
     .stats{flex:1;display:grid!important;grid-template-columns:1fr 1fr;gap:2px 10px}
     .stat{font-size:7px}.stat b{font-size:8px}
     .sdk-card{flex:1}
-    label.box{font-size:7px;line-height:1.6;gap:6px;align-items:center}
-    label.box input{width:22px;height:22px}
+    .sdkrow{font-size:7px;line-height:1.5;gap:6px}
+    .toggle{width:64px;height:28px;box-shadow:none;font-size:8px}
+    .toggle .knob{width:22px;height:16px}
+    .toggle[aria-pressed="true"] .knob{left:33px}
+    .toggle.busy .knob{left:18px}
     .browser{border-width:3px;box-shadow:none}
     .headbar{font-size:9px;padding:5px 8px;border-bottom-width:3px}
     .slot{height:18px;min-width:64px;font-size:7px}
@@ -136,12 +148,12 @@
     </div>
     <div class="card sdk-card">
       <h3>CLOUDFRONT</h3>
-      <label class="box"><input type="checkbox" id="sdkBox"><span>Inject AWS WAF Bot Control SDK</span></label>
+      <div class="sdkrow"><button id="sdkToggle" class="toggle" aria-pressed="false" aria-label="Inject AWS WAF Bot Control SDK"><span class="knob"></span><span class="txt">OFF</span></button><span>Inject AWS WAF Bot Control SDK</span></div>
     </div>
     <div class="card keys-card keys">
       <b>← →</b> move &nbsp; <b>↑</b> rotate<br>
       <b>↓</b> soft drop &nbsp; <b>SPACE</b> hard drop<br>
-      <b>P</b> pause &nbsp; <b>M</b> mute
+      <b>P</b> pause &nbsp; <b>M</b> mute<br><b>S</b> SDK on/off
     </div>
   </div>
 </div>
@@ -308,6 +320,7 @@ function fail() {
 // ---------- the rescue: CloudFront + WAF ----------
 function startRescue(reason) {
   state = 'rescue';
+  const tg = $('sdkToggle'); tg.classList.add('busy'); tg.disabled = true;
   rescue = {t: reason === 'fail' ? 0 : 0.9, reason, zaps: null, zi: 0, docked: false, settled: false};
   if (reason === 'fail') { beep(90, 0.6, 'sawtooth', 0.07, -40); }
 }
@@ -355,7 +368,9 @@ function resumeFromModal() {
   if (!cur && !pendingClear) spawn();
 }
 function setSdk(on) {
-  sdk = on; $('sdkBox').checked = on;
+  sdk = on;
+  const t = $('sdkToggle'); t.classList.remove('busy'); t.disabled = false;
+  t.setAttribute('aria-pressed', on); t.querySelector('.txt').textContent = on ? 'ON' : 'OFF';
   const s = $('slot'); s.classList.toggle('on', on); s.textContent = on ? 'SDK ✓' : 'empty';
   drawNext();
 }
@@ -610,6 +625,7 @@ addEventListener('keydown', e => {
   }
   if (e.code === 'KeyP' && (state === 'play')) paused = !paused;
   if (e.code === 'KeyM') muted = !muted;
+  if (e.code === 'KeyS') toggleSdk();
 });
 document.querySelectorAll('.pad button').forEach(b => {
   let hold, rep;
@@ -644,13 +660,17 @@ cv.addEventListener('pointerup', e => {
 });
 cv.addEventListener('pointercancel', () => tch = null);
 $('startBtn').onclick = start; $('againBtn').onclick = start; $('resumeBtn').onclick = resumeFromModal;
-$('sdkBox').addEventListener('change', e => {
-  if (e.target.checked) {
-    if (state === 'play') { e.target.checked = false; startRescue('checkbox'); }
-    else setSdk(true);
-  } else setSdk(false);
-  e.target.blur();
-});
+function toggleSdk() {
+  if (state === 'rescue') return;
+  if (sdk) {
+    setSdk(false); beep(330, 0.12, 'square', 0.05, -200);
+    if (state === 'play') toast('SDK removed. Agents back in disguise.');
+  } else if (state === 'play') {
+    const t = $('sdkToggle'); t.classList.add('busy'); t.disabled = true;
+    startRescue('toggle');
+  } else setSdk(true);
+}
+$('sdkToggle').addEventListener('click', e => { toggleSdk(); e.currentTarget.blur(); });
 
 requestAnimationFrame(frame);
 })();
