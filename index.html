@@ -10,11 +10,11 @@
   :root{--bg:#0d1626;--panel:#16233a;--ink:#e6edf7;--dim:#8ea0bb;--orange:#ff9900;--teal:#2dd4bf;--navy:#232f3e;--red:#ff4d4d}
   *{box-sizing:border-box}
   html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:"Press Start 2P",monospace;image-rendering:pixelated}
-  body{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:12px;
+  body{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:12px;overflow:hidden;
        background:radial-gradient(circle at 20% 10%,#1b2b47 0,transparent 45%),radial-gradient(circle at 90% 90%,#12313a 0,transparent 40%),var(--bg)}
   h1{font-size:18px;margin:0;letter-spacing:2px}
   h1 span{color:var(--orange)}
-  .sub{font-size:8px;color:var(--dim);margin-top:6px;text-align:center}
+  .sub{font-size:8px;color:var(--dim);margin-top:8px;line-height:1.7}
   .wrap{display:flex;gap:16px;align-items:flex-start}
   .browser{background:#f3f4f6;border:4px solid var(--navy);box-shadow:8px 8px 0 #000a;position:relative}
   .chrome{background:var(--navy);display:flex;align-items:center;gap:6px;padding:8px}
@@ -23,7 +23,7 @@
   .headbar{display:flex;align-items:center;gap:8px;background:#e5e7eb;color:var(--navy);font-size:10px;padding:8px;border-bottom:4px solid var(--navy)}
   .slot{min-width:72px;height:20px;border:2px dashed #94a3b8;display:flex;align-items:center;justify-content:center;font-size:8px;color:#94a3b8}
   .slot.on{border:2px solid #c2410c;background:var(--orange);color:#1f2937;box-shadow:0 0 12px var(--orange)}
-  canvas#board{display:block;height:min(68vh,720px);aspect-ratio:1/2;background:#0b1220}
+  canvas#board{display:block;height:calc(100dvh - 118px);min-height:360px;aspect-ratio:1/2;background:#0b1220}
   .side{display:flex;flex-direction:column;gap:12px;width:230px}
   .card{background:var(--panel);border:4px solid #000;box-shadow:4px 4px 0 #0008;padding:10px;font-size:9px;line-height:1.7}
   .card h3{margin:0 0 8px;font-size:9px;color:var(--orange)}
@@ -54,21 +54,19 @@
   button.go:active{transform:translate(2px,2px);box-shadow:2px 2px 0 #000}
   #toast{position:absolute;left:50%;top:44%;transform:translateX(-50%);background:#111827;border:3px solid var(--orange);font-size:8px;
          padding:10px;white-space:nowrap;opacity:0;transition:opacity .3s;pointer-events:none}
-  .pad{display:none;gap:8px;justify-content:center}
-  .pad button{font-family:inherit;font-size:14px;width:52px;height:52px;background:var(--panel);color:var(--ink);border:3px solid #000;box-shadow:3px 3px 0 #000}
-  footer{font-size:7px;color:var(--dim);text-align:center;line-height:2}
+  footer{font-size:7px;color:var(--dim);line-height:2}
   .keys.touch{display:none}
-  canvas#board,.pad{touch-action:none;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
+  canvas#board{touch-action:none;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
   @media (max-width:760px), (pointer:coarse) and (max-height:900px){
     html,body{height:100%;overflow:hidden;overscroll-behavior:none}
     body{justify-content:flex-start;gap:6px;padding:max(6px,env(safe-area-inset-top)) 6px max(6px,env(safe-area-inset-bottom));height:100dvh}
     .titleblock,footer,.chrome,.side .keys-card,.side .card h3{display:none!important}
-    .wrap,.side,.side .card,.pad{min-width:0}
+    .wrap,.side,.side .card{min-width:0}
     .keys.kb{display:none}.keys.touch{display:block}
     .wrap{flex-direction:column;align-items:center;gap:6px;width:100%;flex:1;min-height:0}
     .side{order:-1;width:100%;max-width:420px;flex-direction:row;gap:6px}
     .side .card{padding:6px;border-width:3px;box-shadow:none;font-size:8px;line-height:1.5;display:flex;align-items:center}
-    .side .card:first-child{flex:none}
+    .side .next-card{flex:none}
     canvas#next{width:60px;height:36px}
     .stats{flex:1;display:grid!important;grid-template-columns:1fr 1fr;gap:2px 10px}
     .stat{font-size:7px}.stat b{font-size:8px}
@@ -81,21 +79,14 @@
     .browser{border-width:3px;box-shadow:none}
     .headbar{font-size:9px;padding:5px 8px;border-bottom-width:3px}
     .slot{height:18px;min-width:64px;font-size:7px}
-    canvas#board{height:calc(100dvh - 228px);height:calc(100dvh - 228px - env(safe-area-inset-bottom))}
+    canvas#board{height:calc(100dvh - 112px);height:calc(100dvh - 112px - env(safe-area-inset-top) - env(safe-area-inset-bottom));max-width:calc(100vw - 18px);min-height:0}
     .overlay{padding:12px;gap:10px;font-size:8px;line-height:1.8}
     .overlay h2{font-size:13px}
     #toast{font-size:7px}
-    .pad{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;width:100%;max-width:420px}
-    .pad button{width:auto;height:58px;font-size:18px;box-shadow:none;border-width:3px}
-    .pad button:active{background:#ff9900;color:#111}
   }
 </style>
 </head>
 <body>
-<div class="titleblock" style="text-align:center">
-  <h1>TAG <span>DROP</span></h1>
-  <div class="sub">stack the page. some tags are agents in disguise.</div>
-</div>
 
 <div class="wrap">
   <div class="browser">
@@ -114,7 +105,7 @@
       <p>Look closely: fakes glitch and misspell their tags (<span class="hi">&lt;d1v&gt;</span>).</p>
       <button class="go" id="startBtn">PRESS START ▶</button>
       <p class="keys kb">← → move · ↑ rotate · ↓ soft · SPACE drop · P pause</p>
-      <p class="keys touch">tap = rotate · swipe ← → = move<br>swipe ↓ = drop · or use the buttons</p>
+      <p class="keys touch">tap = rotate · swipe ← → = move<br>swipe ↓ = drop</p>
     </div>
 
     <div id="sdkModal" class="overlay hidden">
@@ -136,7 +127,11 @@
   </div>
 
   <div class="side">
-    <div class="card">
+    <div class="titleblock">
+      <h1>TAG <span>DROP</span></h1>
+      <div class="sub">stack the page. some tags are agents in disguise.</div>
+    </div>
+    <div class="card next-card">
       <h3>NEXT</h3>
       <canvas id="next" width="120" height="72"></canvas>
     </div>
@@ -155,15 +150,10 @@
       <b>↓</b> soft drop &nbsp; <b>SPACE</b> hard drop<br>
       <b>P</b> pause &nbsp; <b>M</b> mute<br><b>S</b> SDK on/off
     </div>
+    <footer>A tiny game about AWS WAF Bot Control SDK injection in Amazon CloudFront.<br>Not a real WAF. Read the docs before ticking the real box.</footer>
   </div>
 </div>
 
-<div class="pad">
-  <button data-k="left">◀</button><button data-k="rot">⟳</button><button data-k="right">▶</button>
-  <button data-k="down">▼</button><button data-k="drop">⤓</button>
-</div>
-
-<footer>A tiny game about AWS WAF Bot Control SDK injection in Amazon CloudFront.<br>Not a real WAF. Read the docs before ticking the real box.</footer>
 
 <script>
 (() => {
@@ -482,14 +472,28 @@ function drawFx(dt) {
 }
 
 const CLOUD = [
-  '......####......',
-  '....########....',
-  '..###########...',
-  '.##############.',
-  '################',
-  '################',
-  '.##############.',
+  '........#####.......',
+  '......#########.....',
+  '.....###########....',
+  '..###############...',
+  '.#################..',
+  '###################.',
+  '####################',
+  '####################',
+  '####################',
+  '.##################.',
 ];
+// AWS cloud: squid-ink pixel cloud, white outline, "aws" wordmark and the orange smile arrow
+function awsCloud(x, y, P) {
+  for (const [dx, dy] of [[-3, 0], [3, 0], [0, -3], [0, 3]]) pix(CLOUD, x + dx, y + dy, P, '#e6edf7');
+  pix(CLOUD, x, y, P, '#232f3e', '#161e2a');
+  const mx = x + 10 * P, my = y + 5.6 * P;
+  cx.font = `22px ${FONT}`; cx.fillStyle = '#fff'; cx.textAlign = 'center'; cx.textBaseline = 'middle';
+  cx.fillText('aws', mx, my);
+  cx.fillStyle = '#ff9900';
+  for (let i = -30; i <= 26; i += 4) cx.fillRect(mx + i - 2, my + 16 - (i * i) / 150, 4, 4);
+  cx.fillRect(mx + 22, my + 7, 8, 4); cx.fillRect(mx + 26, my + 7, 4, 8);
+}
 const SHIELD = [
   '.#########.',
   '###########',
@@ -526,12 +530,10 @@ function drawRescue(time) {
   // CloudFront cloud + arm + SDK piece
   const fade = 1 - clamp((t - 5.3) / 0.6);
   cx.globalAlpha = fade;
-  const cxp = -170 + ease(clamp((t - 0.9) / 0.6)) * 182, cyp = 18, P = 9;
-  pix(CLOUD, cxp, cyp, P, '#f1f5f9', '#cbd5e1');
-  cx.fillStyle = '#232f3e'; cx.fillRect(cxp + 4 * P, cyp + 7 * P, 8 * P, 5 * P);
-  cx.fillStyle = '#ff9900'; cx.fillRect(cxp + 4 * P, cyp + 8 * P, 8 * P, 4); cx.fillRect(cxp + 4 * P, cyp + 10 * P, 8 * P, 4);
+  const cxp = -180 + ease(clamp((t - 0.9) / 0.6)) * 192, cyp = 18, P = 8;
+  awsCloud(cxp, cyp, P);
   const sx = W / 2 + 40, sy = -60 + ease(clamp((t - 1.3) / 0.8)) * 72;
-  const ax = cxp + 15 * P, ay = cyp + 3 * P, ex = (ax + sx) / 2 + 10, ey = Math.min(ay, sy) - 6;
+  const ax = cxp + 18 * P, ay = cyp + 4 * P, ex = (ax + sx) / 2 + 10, ey = Math.min(ay, sy) - 6;
   cx.strokeStyle = '#232f3e'; cx.lineWidth = 12; cx.lineCap = 'square';
   cx.beginPath(); cx.moveTo(ax, ay); cx.lineTo(ex, ey); cx.lineTo(sx, sy - 6); cx.stroke();
   cx.fillStyle = '#ff9900'; [[ax, ay], [ex, ey]].forEach(([x, y]) => cx.fillRect(x - 7, y - 7, 14, 14));
@@ -627,16 +629,6 @@ addEventListener('keydown', e => {
   if (e.code === 'KeyM') muted = !muted;
   if (e.code === 'KeyS') toggleSdk();
 });
-document.querySelectorAll('.pad button').forEach(b => {
-  let hold, rep;
-  const stop = () => { clearTimeout(hold); clearInterval(rep); };
-  b.addEventListener('pointerdown', e => {
-    e.preventDefault(); stop(); act(b.dataset.k);
-    if (['left', 'right', 'down'].includes(b.dataset.k)) hold = setTimeout(() => rep = setInterval(() => act(b.dataset.k), 55), 170);
-  });
-  ['pointerup', 'pointercancel', 'pointerleave'].forEach(ev => b.addEventListener(ev, stop));
-  b.addEventListener('contextmenu', e => e.preventDefault());
-});
 // gestures on the board: tap rotates, drag moves a column per ~cell, flick down hard-drops
 let tch = null;
 cv.addEventListener('pointerdown', e => {
@@ -671,6 +663,16 @@ function toggleSdk() {
   } else setSdk(true);
 }
 $('sdkToggle').addEventListener('click', e => { toggleSdk(); e.currentTarget.blur(); });
+
+// size the board to whatever height is left on screen (CSS calc is only the first guess)
+function fit() {
+  cv.style.height = '0px';
+  const top = cv.getBoundingClientRect().top, pad = innerWidth <= 760 ? 8 : 20;
+  const maxW = innerWidth <= 760 ? innerWidth - 18 : innerWidth - 300;
+  cv.style.height = Math.max(240, Math.min(innerHeight - top - pad, maxW * 2)) + 'px';
+}
+addEventListener('resize', fit); addEventListener('orientationchange', () => setTimeout(fit, 200));
+fit(); document.fonts && document.fonts.ready.then(fit);
 
 requestAnimationFrame(frame);
 })();
